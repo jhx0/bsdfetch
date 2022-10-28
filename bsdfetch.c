@@ -32,9 +32,6 @@
 #define COLOR_GREEN "\x1B[32m"
 #define COLOR_RESET "\x1B[0m"
 
-#define CLEAR(s) \
-		memset(s, '\0', strlen(s));
-
 #define CELSIUS 273.15
 
 #define _SILENT (void)
@@ -67,18 +64,10 @@ static void show(const char *entry, const char *text) {
 }
 
 static void get_shell() {
-	char home[128];
-
-	CLEAR(home);
-
 	show("Shell", getenv("SHELL"));
 }
 
 static void get_user() {
-	char user[128];
-
-	CLEAR(user);
-
 	show("User", getenv("USER"));
 }
 
@@ -86,8 +75,8 @@ static void get_cpu() {
 	size_t num_cpu_size = 0;
 	size_t cpu_type_size = 0;
 	uint num_cpu = 0;
-	char cpu_type[200];
-	char tmp[100];
+	char cpu_type[200] = {0};
+	char tmp[100] = {0};
 
 	num_cpu_size = sizeof(num_cpu);
 	if(sysctlbyname("hw.ncpu", &num_cpu, &num_cpu_size, NULL, 0) == -1)
@@ -99,17 +88,15 @@ static void get_cpu() {
 
 	show("CPU", cpu_type);
 
-	CLEAR(tmp);
 	_SILENT sprintf(tmp, "%d", num_cpu);
 
 	show("Cores", tmp);
 
 	for(uint i = 0; i < num_cpu; i++) {
 		size_t temperature_size = 0;
-		char buf[100];
+		char buf[100] = {0};
 		int temperature = 0;
 
-		CLEAR(buf);
 		sprintf(buf, "dev.cpu.%d.temperature", i);	
 
 		temperature_size = sizeof(buf);
@@ -124,14 +111,13 @@ static void get_cpu() {
 }
 
 static void get_loadavg() {
-	char tmp[20];
+	char tmp[20] = {0};
 	double *lavg = NULL;
 
 	lavg = malloc(sizeof(double) * 3);
 
 	(void)getloadavg(lavg, -1);
 
-	CLEAR(tmp);
 	_SILENT sprintf(tmp, "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
 
 	show("Loadavg", tmp);
@@ -139,13 +125,12 @@ static void get_loadavg() {
 
 static void get_packages() {
 	FILE *f = NULL;
-	char buf[10];
+	char buf[10] = {0};
 
 	f = popen("/usr/sbin/pkg info | wc -l | sed 's/ //g' | tr -d '\n'", "r");
 	if(f == NULL)
 		die(errno);
 
-	CLEAR(buf);
 	fgets(buf, sizeof(buf), f);
 	pclose(f);
 
@@ -153,7 +138,7 @@ static void get_packages() {
 }
 
 static void get_uptime() {
-	char buf[100];
+	char buf[100] = {0};
 	int up = 0;
 	int ret = 0;
 	int days = 0;
@@ -172,7 +157,6 @@ static void get_uptime() {
 	up %= 3600;
 	minutes = up / 60;
 
-	CLEAR(buf);
 	_SILENT sprintf(buf, "%dd %dh %dm", days, hours, minutes);
 
 	show("Uptime", buf);
@@ -182,7 +166,7 @@ static void get_memory() {
 	unsigned long long buf = 0;
 	unsigned long long mem = 0;
 	size_t buf_size = 0;
-	char tmp[50];
+	char tmp[50] = {0};
 
 	buf_size = sizeof(buf);
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
@@ -190,7 +174,6 @@ static void get_memory() {
 
 	mem = buf / 1048576;
 
-	CLEAR(tmp);
 	_SILENT sprintf(tmp, "%llu MB", mem);
 
 	show("RAM", tmp);
@@ -198,9 +181,7 @@ static void get_memory() {
 
 static void get_hostname() {
 	long host_size_max = 0;
-	char hostname[15];
-
-	CLEAR(hostname);
+	char hostname[15] = {0};
 
 	host_size_max = sysconf(_SC_HOST_NAME_MAX);
 	if(gethostname(hostname, host_size_max) == -1)
@@ -210,10 +191,8 @@ static void get_hostname() {
 }
 
 static void get_arch() {
-	char buf[10];
+	char buf[10] = {0};
 	size_t buf_size = 0;
-
-	CLEAR(buf);
 
 	buf_size = sizeof(buf);
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
