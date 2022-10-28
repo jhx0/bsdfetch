@@ -221,8 +221,17 @@ static void get_sysinfo() {
 }
 
 int main(int argc, char **argv) {
-	if(argc == 2 && (strcmp(argv[1], "-n") == 0))
+	int is_a_tty = 0;
+
+	is_a_tty = isatty(1);
+
+	if(is_a_tty) {
+		if(argc == 2 && (strcmp(argv[1], "-n") == 0)) {
+			color_flag = 0;
+		}
+	} else {
 		color_flag = 0;
+	}
 
 	get_sysinfo();
 	get_hostname();
