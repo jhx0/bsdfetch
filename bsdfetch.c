@@ -38,6 +38,8 @@
 
 typedef unsigned int uint;
 
+int color_flag = 1;
+
 static void die();
 static void show(const char *entry, const char *text);
 static void get_shell();
@@ -58,9 +60,15 @@ static void die(int err_num) {
 }
 
 static void show(const char *entry, const char *text) {
-	_SILENT fprintf(stdout, "%s%s:%s %s\n", 
-					COLOR_RED, entry, COLOR_RESET, 
-					text);
+	if(color_flag) {
+		_SILENT fprintf(stdout, "%s%s:%s %s\n", 
+						COLOR_RED, entry, COLOR_RESET, 
+						text);
+	} else {
+		_SILENT fprintf(stdout, "%s: %s\n", 
+						entry, 
+						text);
+	}
 }
 
 static void get_shell() {
@@ -212,7 +220,10 @@ static void get_sysinfo() {
 	show("Version", un.version);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+	if(argc == 2 && (strcmp(argv[1], "-n") == 0))
+		color_flag = 0;
+
 	get_sysinfo();
 	get_hostname();
 	get_arch();
