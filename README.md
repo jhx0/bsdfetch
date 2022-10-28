@@ -8,3 +8,8 @@ To build simply type **"make"** in the source directory. After that you can run 
 **Example output:**
 
 ![image](https://user-images.githubusercontent.com/37046652/198672083-b66934a5-a514-4f6b-b59a-f7977c9ae7fd.png)
+
+
+**Thanks:**
+
+https://twitter.com/8bitsound - For suggestions regarding tty, initialization and color ouput handling
