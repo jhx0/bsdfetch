@@ -12,4 +12,4 @@ To build simply type **"make"** in the source directory. After that you can run 
 
 **Thanks:**
 
-Felix Palmen (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization and color output handling
+Felix Palmen (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization, color output handling. Also for contributing to the project (pkg).
