@@ -27,6 +27,7 @@
 #include <sys/vmmeter.h>
 #include <sys/utsname.h>
 #include <vm/vm_param.h>
+#include <dlfcn.h>
 
 #define COLOR_RED "\x1B[31m"
 #define COLOR_GREEN "\x1B[32m"
@@ -35,6 +36,18 @@
 #define CELSIUS 273.15
 
 #define _SILENT (void)
+
+#define LIBPKGSO "/lib/libpkg.so"
+
+struct pkgdb;
+struct pkgdb_it;
+typedef int (*pkg_init_fp)(const char *, const char*);
+typedef void (*pkg_shutdown_fp)(void);
+typedef int (*pkgdb_open_fp)(struct pkgdb **db, int type);
+typedef void (*pkgdb_close_fp)(struct pkgdb *db);
+typedef struct pkgdb_it *(*pkgdb_query_fp)(struct pkgdb *db,
+	const char *pattern, int type);
+typedef int (*pkgdb_it_count_fp)(struct pkgdb_it *);
 
 typedef unsigned int uint;
 
@@ -132,16 +145,47 @@ static void get_loadavg() {
 }
 
 static void get_packages() {
-	FILE *f = NULL;
-	char buf[10] = {0};
+	int numpkg = 0;
+	void *libhdl = 0;
+	struct pkgdb *pdb = 0;
+	char buf[256];
+	size_t basesz = sizeof buf;
 
-	f = popen("/usr/sbin/pkg info | wc -l | sed 's/ //g' | tr -d '\n'", "r");
-	if(f == NULL)
-		die(errno);
+	if (sysctlbyname("user.localbase", buf, &basesz, NULL, 0) < 0)
+	    goto done;
+	if (sizeof buf - basesz < sizeof LIBPKGSO - 1)
+	    goto done;
+	memcpy(buf + basesz - 1, LIBPKGSO, sizeof LIBPKGSO);
 
-	fgets(buf, sizeof(buf), f);
-	pclose(f);
+	if (!(libhdl = dlopen(buf, RTLD_LAZY))) goto done;
+	pkg_init_fp p_init = (pkg_init_fp)dlsym(libhdl, "pkg_init");
+	if (!p_init) goto done;
+	pkg_shutdown_fp p_shutdown = (pkg_shutdown_fp)dlsym(
+		libhdl, "pkg_shutdown");
+	if (!p_shutdown) goto done;
+	pkgdb_open_fp pdb_open = (pkgdb_open_fp)dlsym(libhdl, "pkgdb_open");
+	if (!pdb_open) goto done;
+	pkgdb_close_fp pdb_close = (pkgdb_close_fp)dlsym(libhdl, "pkgdb_close");
+	if (!pdb_close) goto done;
+	pkgdb_query_fp pdb_query = (pkgdb_query_fp)dlsym(libhdl, "pkgdb_query");
+	if (!pdb_query) goto done;
+	pkgdb_it_count_fp pdb_it_count = (pkgdb_it_count_fp)dlsym(
+		libhdl, "pkgdb_it_count");
+	if (!pdb_it_count) goto done;
 
+	if (p_init("/", 0) != 0) goto done;
+	if (pdb_open(&pdb, 0) != 0) goto done;
+	struct pkgdb_it *it = pdb_query(pdb, 0, 0);
+	numpkg = pdb_it_count(it);
+
+done:
+	if (pdb) pdb_close(pdb);
+	if (libhdl)
+	{
+	    if (p_shutdown) p_shutdown();
+	    dlclose(libhdl);
+	}
+	sprintf(buf, "%d", numpkg);
 	show("Packages", buf);
 }
 
