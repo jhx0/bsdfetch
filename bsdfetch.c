@@ -29,6 +29,9 @@
 #include <vm/vm_param.h>
 #include <dlfcn.h>
 
+#define _PRG_NAME "bsdfetch"
+#define _VERSION "0.2"
+
 #define COLOR_RED "\x1B[31m"
 #define COLOR_GREEN "\x1B[32m"
 #define COLOR_RESET "\x1B[0m"
