@@ -68,6 +68,7 @@ static void get_memory();
 static void get_hostname();
 static void get_arch();
 static void get_sysinfo();
+static void version();
 
 static void die(int err_num) {
 	fprintf(stderr, "Error: %s\n", strerror(err_num));
@@ -267,6 +268,15 @@ static void get_sysinfo() {
 	show("Version", un.version);
 }
 
+static void version() {
+	_SILENT fprintf(stdout, "%s - version %s (2022)\n",
+			_PRG_NAME,
+			_VERSION
+			);
+
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char **argv) {
 	int is_a_tty = 0;
 
@@ -279,6 +289,9 @@ int main(int argc, char **argv) {
 	} else {
 		color_flag = 0;
 	}
+
+	if(argc == 2 && (strcmp(argv[1], "-v") == 0))
+		version();
 
 	get_sysinfo();
 	get_hostname();
