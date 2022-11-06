@@ -13,9 +13,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifndef __FreeBSD__
-#error "This application will only work on FreeBSD!"
-#endif
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -24,13 +21,17 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#ifdef __FreeBSD__
 #include <sys/vmmeter.h>
+#endif
 #include <sys/utsname.h>
+#ifdef __FreeBSD__
 #include <vm/vm_param.h>
+#endif
 #include <dlfcn.h>
 
 #define _PRG_NAME "bsdfetch"
-#define _VERSION "0.2"
+#define _VERSION "0.3"
 
 #define COLOR_RED "\x1B[31m"
 #define COLOR_GREEN "\x1B[32m"
@@ -56,22 +57,31 @@ typedef unsigned int uint;
 
 int color_flag = 1;
 
-static void die();
+static void die(int err_num, int line);
 static void show(const char *entry, const char *text);
 static void get_shell();
 static void get_user();
+#ifdef __FreeBSD__
 static void get_cpu();
+#endif
 static void get_loadavg();
+#ifdef __FreeBSD__
 static void get_packages();
+#endif
 static void get_uptime();
+#ifdef __FreeBSD__
 static void get_memory();
+#endif
 static void get_hostname();
+#ifdef __FreeBSD__
 static void get_arch();
+#endif
 static void get_sysinfo();
 static void version();
+static void usage();
 
-static void die(int err_num) {
-	fprintf(stderr, "Error: %s\n", strerror(err_num));
+static void die(int err_num, int line) {
+	fprintf(stderr, "[%d - %d] Error: %s\n", line, err_num, strerror(err_num));
 
 	exit(EXIT_FAILURE);
 }
@@ -96,6 +106,7 @@ static void get_user() {
 	show("User", getenv("USER"));
 }
 
+#ifdef __FreeBSD__
 static void get_cpu() {
 	size_t num_cpu_size = 0;
 	size_t cpu_type_size = 0;
@@ -104,12 +115,14 @@ static void get_cpu() {
 	char tmp[100] = {0};
 
 	num_cpu_size = sizeof(num_cpu);
+
 	if(sysctlbyname("hw.ncpu", &num_cpu, &num_cpu_size, NULL, 0) == -1)
-		die(errno);
+		die(errno, __LINE__);
 	
 	cpu_type_size = sizeof(char) * 200;
+
 	if(sysctlbyname("hw.model", &cpu_type, &cpu_type_size, NULL, 0) == -1)
-		die(errno);
+		die(errno, __LINE__);
 
 	show("CPU", cpu_type);
 
@@ -134,6 +147,7 @@ static void get_cpu() {
 						(temperature * 0.1) - CELSIUS);
 	}
 }
+#endif
 
 static void get_loadavg() {
 	char tmp[20] = {0};
@@ -148,6 +162,8 @@ static void get_loadavg() {
 	show("Loadavg", tmp);
 }
 
+/* This code will only work on FreeBSD based systems */
+#ifdef __FreeBSD__
 static void get_packages() {
 	int numpkg = 0;
 	void *libhdl = 0;
@@ -192,6 +208,7 @@ done:
 	sprintf(buf, "%d", numpkg);
 	show("Packages", buf);
 }
+#endif
 
 static void get_uptime() {
 	char buf[100] = {0};
@@ -204,7 +221,7 @@ static void get_uptime() {
 
 	ret = clock_gettime(CLOCK_UPTIME, &t);
 	if(ret == -1)
-		die(errno);
+		die(errno, __LINE__);
 
 	up = t.tv_sec;
 	days = up / 86400;
@@ -218,15 +235,17 @@ static void get_uptime() {
 	show("Uptime", buf);
 }
 
+#ifdef __FreeBSD__
 static void get_memory() {
 	unsigned long long buf = 0;
 	unsigned long long mem = 0;
-	size_t buf_size = 0;
 	char tmp[50] = {0};
+	size_t buf_size = 0;
 
 	buf_size = sizeof(buf);
+
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
-		die(errno);
+		die(errno, __LINE__);
 
 	mem = buf / 1048576;
 
@@ -234,6 +253,7 @@ static void get_memory() {
 
 	show("RAM", tmp);
 }
+#endif
 
 static void get_hostname() {
 	long host_size_max = 0;
@@ -241,27 +261,30 @@ static void get_hostname() {
 
 	host_size_max = sysconf(_SC_HOST_NAME_MAX);
 	if(gethostname(hostname, host_size_max) == -1)
-		die(errno);
+		die(errno, __LINE__);
 
 	show("Host", hostname);
 }
 
+#ifdef __FreeBSD__
 static void get_arch() {
-	char buf[10] = {0};
+	char buf[20] = {0};
 	size_t buf_size = 0;
 
 	buf_size = sizeof(buf);
+
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
-		die(errno);
+		die(errno, __LINE__);
 
 	show("Arch", buf);
 }
+#endif
 
 static void get_sysinfo() {
 	struct utsname un;
 	
 	if(uname(&un))
-		die(errno);
+		die(errno, __LINE__);
 
 	show("OS", un.sysname);
 	show("Release", un.release);
@@ -273,6 +296,15 @@ static void version() {
 			_PRG_NAME,
 			_VERSION
 			);
+
+	exit(EXIT_SUCCESS);
+}
+
+static void usage() {
+	_SILENT fprintf(stdout, "USAGE: %s [-n|-v|-h]\n", _PRG_NAME);
+	_SILENT fprintf(stdout, "   -n  Turn off colors\n");
+	_SILENT fprintf(stdout, "   -v  Show version\n");
+	_SILENT fprintf(stdout, "   -h  Show this help text\n");
 
 	exit(EXIT_SUCCESS);
 }
@@ -293,16 +325,27 @@ int main(int argc, char **argv) {
 	if(argc == 2 && (strcmp(argv[1], "-v") == 0))
 		version();
 
+	if(argc == 2 && (strcmp(argv[1], "-h") == 0))
+		usage();
+
 	get_sysinfo();
 	get_hostname();
+#ifdef __FreeBSD__
 	get_arch();
+#endif
 	get_shell();
 	get_user();
+#ifdef __FreeBSD__
 	get_packages();
+#endif
 	get_uptime();
+#ifdef __FreeBSD__
 	get_memory();
+#endif
 	get_loadavg();
+#ifdef __FreeBSD__
 	get_cpu();
+#endif
 
 	return EXIT_SUCCESS;
 }
