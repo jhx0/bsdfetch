@@ -12,4 +12,5 @@ To build simply type **"make"** in the source directory. After that you can run 
 
 **Thanks:**
 
-**Felix Palmen** (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization, color output handling. Also for contributing to the project (pkg).
+**Felix Palmen** (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization, color output handling. Also for contributing to the project (pkg).   
+**Laurent Cheylus** (https://twitter.com/lcheylus) - For implementing "Arch" and "Memory" support on OpenBSD (libsysctl).
