@@ -30,6 +30,10 @@
 #endif
 #include <dlfcn.h>
 
+#ifdef __OpenBSD__
+#include "sysctlbyname.h"
+#endif
+
 #define _PRG_NAME "bsdfetch"
 #define _VERSION "0.3"
 
@@ -69,13 +73,9 @@ static void get_loadavg();
 static void get_packages();
 #endif
 static void get_uptime();
-#ifdef __FreeBSD__
 static void get_memory();
-#endif
 static void get_hostname();
-#ifdef __FreeBSD__
 static void get_arch();
-#endif
 static void get_sysinfo();
 static void version();
 static void usage();
@@ -88,12 +88,12 @@ static void die(int err_num, int line) {
 
 static void show(const char *entry, const char *text) {
 	if(color_flag) {
-		_SILENT fprintf(stdout, "%s%s:%s %s\n", 
-						COLOR_RED, entry, COLOR_RESET, 
+		_SILENT fprintf(stdout, "%s%s:%s %s\n",
+						COLOR_RED, entry, COLOR_RESET,
 						text);
 	} else {
-		_SILENT fprintf(stdout, "%s: %s\n", 
-						entry, 
+		_SILENT fprintf(stdout, "%s: %s\n",
+						entry,
 						text);
 	}
 }
@@ -118,7 +118,7 @@ static void get_cpu() {
 
 	if(sysctlbyname("hw.ncpu", &num_cpu, &num_cpu_size, NULL, 0) == -1)
 		die(errno, __LINE__);
-	
+
 	cpu_type_size = sizeof(char) * 200;
 
 	if(sysctlbyname("hw.model", &cpu_type, &cpu_type_size, NULL, 0) == -1)
@@ -135,13 +135,13 @@ static void get_cpu() {
 		char buf[100] = {0};
 		int temperature = 0;
 
-		sprintf(buf, "dev.cpu.%d.temperature", i);	
+		sprintf(buf, "dev.cpu.%d.temperature", i);
 
 		temperature_size = sizeof(buf);
 		if(sysctlbyname(buf, &temperature, &temperature_size, NULL, 0) == -1)
 			return;
 
-		_SILENT fprintf(stdout, " %s->%s %sCore [%d]:%s %.1f °C\n", 
+		_SILENT fprintf(stdout, " %s->%s %sCore [%d]:%s %.1f °C\n",
 						COLOR_GREEN, COLOR_RESET,
 						COLOR_RED, i + 1, COLOR_RESET,
 						(temperature * 0.1) - CELSIUS);
@@ -235,7 +235,6 @@ static void get_uptime() {
 	show("Uptime", buf);
 }
 
-#ifdef __FreeBSD__
 static void get_memory() {
 	unsigned long long buf = 0;
 	unsigned long long mem = 0;
@@ -244,8 +243,13 @@ static void get_memory() {
 
 	buf_size = sizeof(buf);
 
+#ifdef __FreeBSD__
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
+#elif __OpenBSD__
+	if(sysctlbyname("hw.physmem", &buf, &buf_size, NULL, 0) == -1)
+		die(errno, __LINE__);
+#endif
 
 	mem = buf / 1048576;
 
@@ -253,7 +257,6 @@ static void get_memory() {
 
 	show("RAM", tmp);
 }
-#endif
 
 static void get_hostname() {
 	long host_size_max = 0;
@@ -266,23 +269,26 @@ static void get_hostname() {
 	show("Host", hostname);
 }
 
-#ifdef __FreeBSD__
 static void get_arch() {
 	char buf[20] = {0};
 	size_t buf_size = 0;
 
 	buf_size = sizeof(buf);
 
+#ifdef __FreeBSD__
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
+#elif __OpenBSD__
+	if(sysctlbyname("hw.machine", &buf, &buf_size, NULL, 0) == -1)
+		die(errno, __LINE__);
+#endif
 
 	show("Arch", buf);
 }
-#endif
 
 static void get_sysinfo() {
 	struct utsname un;
-	
+
 	if(uname(&un))
 		die(errno, __LINE__);
 
@@ -330,18 +336,14 @@ int main(int argc, char **argv) {
 
 	get_sysinfo();
 	get_hostname();
-#ifdef __FreeBSD__
 	get_arch();
-#endif
 	get_shell();
 	get_user();
 #ifdef __FreeBSD__
 	get_packages();
 #endif
 	get_uptime();
-#ifdef __FreeBSD__
 	get_memory();
-#endif
 	get_loadavg();
 #ifdef __FreeBSD__
 	get_cpu();
