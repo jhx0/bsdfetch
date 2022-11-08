@@ -1,4 +1,9 @@
+UNAME_S != uname -s
+.if $(UNAME_S) == "OpenBSD"
 SRC=sysctlbyname.c bsdfetch.c
+.else
+SRC=bsdfetch.c
+.endif
 OBJ=bsdfetch
 CC=cc
 CFLAGS=-Wall -Werror -Wunused -Wextra -Wshadow -pedantic
