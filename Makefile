@@ -1,4 +1,4 @@
-SRC=bsdfetch.c
+SRC=sysctlbyname.c bsdfetch.c
 OBJ=bsdfetch
 CC=cc
 CFLAGS=-Wall -Werror -Wunused -Wextra -Wshadow -pedantic
