@@ -21,17 +21,16 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <sys/utsname.h>
+#include <dlfcn.h>
 #ifdef __FreeBSD__
 #include <sys/vmmeter.h>
-#endif
-#include <sys/utsname.h>
-#ifdef __FreeBSD__
 #include <vm/vm_param.h>
 #endif
-#include <dlfcn.h>
-
 #ifdef __OpenBSD__
 #include "sysctlbyname.h"
+#include <sys/time.h>
+#include <sys/sensors.h>
 #endif
 
 #define _PRG_NAME "bsdfetch"
@@ -65,13 +64,9 @@ static void die(int err_num, int line);
 static void show(const char *entry, const char *text);
 static void get_shell();
 static void get_user();
-#ifdef __FreeBSD__
 static void get_cpu();
-#endif
 static void get_loadavg();
-#ifdef __FreeBSD__
 static void get_packages();
-#endif
 static void get_uptime();
 static void get_memory();
 static void get_hostname();
@@ -106,7 +101,6 @@ static void get_user() {
 	show("User", getenv("USER"));
 }
 
-#ifdef __FreeBSD__
 static void get_cpu() {
 	size_t num_cpu_size = 0;
 	size_t cpu_type_size = 0;
@@ -130,6 +124,7 @@ static void get_cpu() {
 
 	show("Cores", tmp);
 
+#ifdef __FreeBSD__
 	for(uint i = 0; i < num_cpu; i++) {
 		size_t temperature_size = 0;
 		char buf[100] = {0};
@@ -146,8 +141,29 @@ static void get_cpu() {
 						COLOR_RED, i + 1, COLOR_RESET,
 						(temperature * 0.1) - CELSIUS);
 	}
-}
 #endif
+#ifdef __OpenBSD__
+	int mib[5];
+	char temp[10] = {0};
+	size_t size = 0;
+	struct sensor sensors;
+
+	mib[0] = CTL_HW;
+	mib[1] = HW_SENSORS;
+	mib[2] = 0; 
+	mib[3] = SENSOR_TEMP;
+	mib[4] = 0;
+
+	size = sizeof(sensors);
+
+	if(sysctl(mib, 5, &sensors, &size, NULL, 0) < 0)
+		die(errno, __LINE__);
+
+	_SILENT sprintf(temp, "%d °C", (int)((float)(sensors.value - 273150000) / 1E6));
+
+	show("CPU Temp", temp);
+#endif
+}
 
 static void get_loadavg() {
 	char tmp[20] = {0};
@@ -162,9 +178,8 @@ static void get_loadavg() {
 	show("Loadavg", tmp);
 }
 
-/* This code will only work on FreeBSD based systems */
-#ifdef __FreeBSD__
 static void get_packages() {
+#ifdef __FreeBSD__
 	int numpkg = 0;
 	void *libhdl = 0;
 	struct pkgdb *pdb = 0;
@@ -207,8 +222,27 @@ done:
 	}
 	sprintf(buf, "%d", numpkg);
 	show("Packages", buf);
-}
 #endif
+#ifdef __OpenBSD__
+	FILE *f = NULL;
+	char buf[10] = {0};
+
+	/*
+		This is a little hacky for the moment. I don't
+		see another good solution to get the package
+		count on OpenBSD.
+		Still, this works fine.
+	*/
+	f = popen("/usr/sbin/pkg_info | wc -l | sed 's/ //g' | tr -d '\n'", "r");
+	if(f == NULL)
+		die(errno, __LINE__);
+
+	fgets(buf, sizeof(buf), f);
+	pclose(f);
+
+	show("Packages", buf);
+#endif
+}
 
 static void get_uptime() {
 	char buf[100] = {0};
@@ -339,15 +373,11 @@ int main(int argc, char **argv) {
 	get_arch();
 	get_shell();
 	get_user();
-#ifdef __FreeBSD__
 	get_packages();
-#endif
 	get_uptime();
 	get_memory();
 	get_loadavg();
-#ifdef __FreeBSD__
 	get_cpu();
-#endif
 
 	return EXIT_SUCCESS;
 }
