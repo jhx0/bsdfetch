@@ -4,10 +4,11 @@
 
 To build simply type **"make"** in the source directory. After that you can run it like so **"./bsdfetch"**.
 
+**FreeBSD system example:**   
+![freebsd-bsdfetch](https://user-images.githubusercontent.com/37046652/202207069-76dad8ea-1f4c-4b6e-818c-7af2f5252aa1.png)
 
-**Example output:**
-
-![image](https://user-images.githubusercontent.com/37046652/198672083-b66934a5-a514-4f6b-b59a-f7977c9ae7fd.png)
+**OpenBSD system example:**   
+![openbsd-bsdfetch](https://user-images.githubusercontent.com/37046652/202207149-649af034-8497-418a-a864-520d9aa1d463.png)
 
 
 **Thanks:**
