@@ -150,14 +150,14 @@ static void get_cpu() {
 
 	mib[0] = CTL_HW;
 	mib[1] = HW_SENSORS;
-	mib[2] = 0; 
+	mib[2] = 0;
 	mib[3] = SENSOR_TEMP;
 	mib[4] = 0;
 
 	size = sizeof(sensors);
 
 	if(sysctl(mib, 5, &sensors, &size, NULL, 0) < 0)
-		die(errno, __LINE__);
+		return;
 
 	_SILENT sprintf(temp, "%d °C", (int)((float)(sensors.value - 273150000) / 1E6));
 
