@@ -124,7 +124,7 @@ static void get_cpu() {
 
 	show("Cores", tmp);
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	for(uint i = 0; i < num_cpu; i++) {
 		size_t temperature_size = 0;
 		char buf[100] = {0};
@@ -179,7 +179,25 @@ static void get_loadavg() {
 }
 
 static void get_packages() {
-#ifdef __FreeBSD__
+#if defined(__MidnightBSD__)
+	FILE *f = NULL;
+	char buf[10] = {0};
+
+	/*
+		This is a little hacky for the moment. I don't
+		see another good solution to get the package
+		count on OpenBSD.
+		Still, this works fine.
+	*/
+	f = popen("/usr/sbin/mport list | wc -l | sed 's/ //g' | tr -d '\n'", "r");
+	if(f == NULL)
+		die(errno, __LINE__);
+
+	fgets(buf, sizeof(buf), f);
+	pclose(f);
+
+	show("Packages", buf);
+#elif defined(__FreeBSD__)
 	int numpkg = 0;
 	void *libhdl = 0;
 	struct pkgdb *pdb = 0;
@@ -277,7 +295,7 @@ static void get_memory() {
 
 	buf_size = sizeof(buf);
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #elif __OpenBSD__
@@ -309,7 +327,7 @@ static void get_arch() {
 
 	buf_size = sizeof(buf);
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #elif __OpenBSD__
