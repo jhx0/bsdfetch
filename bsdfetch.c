@@ -184,10 +184,8 @@ static void get_packages() {
 	char buf[10] = {0};
 
 	/*
-		This is a little hacky for the moment. I don't
-		see another good solution to get the package
-		count on OpenBSD.
-		Still, this works fine.
+	  It might be better to use the mport stats functionality long term, but this
+	  avoids parsing.
 	*/
 	f = popen("/usr/sbin/mport list | wc -l | sed 's/ //g' | tr -d '\n'", "r");
 	if(f == NULL)
