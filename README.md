@@ -15,4 +15,5 @@ To build simply type **"make"** in the source directory. After that you can run 
 
 **Felix Palmen** (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization, color output handling. Also for contributing to the project (pkg).   
 **Laurent Cheylus** (https://twitter.com/lcheylus) - For implementing "Arch" and "Memory" support for bsdfetch on OpenBSD (libsysctl). Also, for fixing a bug when no sensors are present on OpenBSD.   
-**Lucas Holt** (https://www.midnightbsd.org/) - For porting bsdfetch to MidnightBSD.
+**Lucas Holt** (https://www.midnightbsd.org/) - For porting bsdfetch to MidnightBSD.   
+**rilysh** (https://github.com/rilysh) - For porting bsdfetch to NetBSD
