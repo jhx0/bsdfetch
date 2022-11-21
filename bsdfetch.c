@@ -301,7 +301,10 @@ static void get_memory() {
 #if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
-#elif defined(__OpenBSD__) || defined(__NetBSD__)
+#elif defined(__OpenBSD__)
+	if(sysctlbyname("hw.physmem", &buf, &buf_size, NULL, 0) == -1)
+		die(errno, __LINE__);
+#elif defined(__NetBSD__)
 	if(sysctlbyname("hw.physmem64", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #endif
