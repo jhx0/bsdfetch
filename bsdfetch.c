@@ -239,7 +239,7 @@ done:
 	sprintf(buf, "%d", numpkg);
 	show("Packages", buf);
 #endif
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__) || defined(__NetBSD__)
 	FILE *f = NULL;
 	char buf[10] = {0};
 
@@ -269,6 +269,11 @@ static void get_uptime() {
 	int minutes = 0;
 	struct timespec t;
 
+// NetBSD kernel doesn't implement CLOCK_UPTIME, to assume we've we'll set CLOCK_UPTIME to CLOCK_REALTIME
+// More easily we can also use value 5 instead CLOCK_UPTIME, since it's only for FreeBSD
+#ifndef CLOCK_UPTIME
+#define CLOCK_UPTIME 0
+#endif
 	ret = clock_gettime(CLOCK_UPTIME, &t);
 	if(ret == -1)
 		die(errno, __LINE__);
@@ -296,8 +301,8 @@ static void get_memory() {
 #if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
-#elif __OpenBSD__
-	if(sysctlbyname("hw.physmem", &buf, &buf_size, NULL, 0) == -1)
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
+	if(sysctlbyname("hw.physmem64", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #endif
 
@@ -328,7 +333,7 @@ static void get_arch() {
 #if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
-#elif __OpenBSD__
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
 	if(sysctlbyname("hw.machine", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #endif
@@ -390,7 +395,9 @@ int main(int argc, char **argv) {
 	get_shell();
 	get_user();
 	get_packages();
+#ifndef __NetBSD__
 	get_uptime();
+#endif
 	get_memory();
 	get_loadavg();
 	get_cpu();

@@ -6,7 +6,7 @@ SRC=bsdfetch.c
 .endif
 OBJ=bsdfetch
 CC=cc
-CFLAGS=-Wall -Werror -Wunused -Wextra -Wshadow -pedantic
+CFLAGS=-Wall -Wunused -Wextra -Wshadow -pedantic
 DEBUG=-g -ggdb
 OPTIMIZATION=-O2
 
