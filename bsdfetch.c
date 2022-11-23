@@ -23,7 +23,7 @@
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
 #include <dlfcn.h>
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/vmmeter.h>
 #include <vm/vm_param.h>
 #endif
@@ -124,7 +124,7 @@ static void get_cpu() {
 
 	show("Cores", tmp);
 
-#if defined(__FreeBSD__) || defined(__MidnightBSD__)
+#if defined(__FreeBSD__) || defined(__MidnightBSD__) || defined(__DragonFly__)
 	for(uint i = 0; i < num_cpu; i++) {
 		size_t temperature_size = 0;
 		char buf[100] = {0};
@@ -141,8 +141,7 @@ static void get_cpu() {
 						COLOR_RED, i + 1, COLOR_RESET,
 						(temperature * 0.1) - CELSIUS);
 	}
-#endif
-#ifdef __OpenBSD__
+#elif defined(__OpenBSD__)
 	int mib[5];
 	char temp[10] = {0};
 	size_t size = 0;
@@ -187,7 +186,7 @@ static void get_packages() {
 	  It might be better to use the mport stats functionality long term, but this
 	  avoids parsing.
 	*/
-	f = popen("/usr/sbin/mport list | wc -l | sed 's/ //g' | tr -d '\n'", "r");
+	f = popen("/usr/sbin/mport list | wc -l | tr -d \"\n \"", "r");
 	if(f == NULL)
 		die(errno, __LINE__);
 
@@ -238,8 +237,7 @@ done:
 	}
 	sprintf(buf, "%d", numpkg);
 	show("Packages", buf);
-#endif
-#if defined(__OpenBSD__) || defined(__NetBSD__)
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
 	FILE *f = NULL;
 	char buf[10] = {0};
 
@@ -249,12 +247,29 @@ done:
 		count on OpenBSD.
 		Still, this works fine.
 	*/
-	f = popen("/usr/sbin/pkg_info | wc -l | sed 's/ //g' | tr -d '\n'", "r");
+	f = popen("/usr/sbin/pkg_info | wc -l | tr -d \"\n \"", "r");
 	if(f == NULL)
 		die(errno, __LINE__);
 
 	fgets(buf, sizeof(buf), f);
 	pclose(f);
+
+	show("Packages", buf);
+#elif defined( __DragonFly__)
+	char buf[10] ={0};
+	FILE *fp = NULL;
+
+	/**
+	 * Despite being a fork of FreeBSD 4.8, DragonFly doesn't share
+	 * same API level access. Here `pkg list` just list all the packages
+	 * from the local database.
+	*/
+	fp = popen("pkg list | wc -l | tr -d \"\n \"", "r");
+	if (fp == NULL)
+		die(errno, __LINE__);
+
+	fgets(buf, sizeof(buf), fp);
+	pclose(fp);
 
 	show("Packages", buf);
 #endif
@@ -301,7 +316,7 @@ static void get_memory() {
 #if defined(__FreeBSD__) || defined(__MidnightBSD__)
 	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__DragonFly__)
 	if(sysctlbyname("hw.physmem", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #elif defined(__NetBSD__)
@@ -333,7 +348,7 @@ static void get_arch() {
 
 	buf_size = sizeof(buf);
 
-#if defined(__FreeBSD__) || defined(__MidnightBSD__)
+#if defined(__FreeBSD__) || defined(__MidnightBSD__) || defined(__DragonFly__)
 	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
 		die(errno, __LINE__);
 #elif defined(__OpenBSD__) || defined(__NetBSD__)
