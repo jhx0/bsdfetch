@@ -202,7 +202,7 @@ static void get_packages() {
 	size_t basesz = sizeof buf;
 
 	if (sysctlbyname("user.localbase", buf, &basesz, NULL, 0) < 0)
-	    // goto done;
+	    goto done;
 	if (sizeof buf - basesz < sizeof LIBPKGSO - 1)
 	    goto done;
 	memcpy(buf + basesz - 1, LIBPKGSO, sizeof LIBPKGSO);
