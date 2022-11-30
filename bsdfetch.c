@@ -23,7 +23,7 @@
 #include <sys/utsname.h>
 #include <dlfcn.h>
 #if defined(__FreeBSD__) || defined(__DragonFly__)
-#include <sys/time.h>
+#include <time.h>
 #include <sys/vmmeter.h>
 #include <vm/vm_param.h>
 #elif defined(__NetBSD__) || defined(__OpenBSD__)
