@@ -22,6 +22,8 @@ $ ./bsdfetch
 **OpenBSD system example:**   
 ![openbsd-bsdfetch](https://user-images.githubusercontent.com/37046652/202207149-649af034-8497-418a-a864-520d9aa1d463.png)
 
+## Interesting:   
+Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh   
 
 ## Thanks:
 
