@@ -18,11 +18,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
+#include <pwd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
 #include <dlfcn.h>
-#if defined(__FreeBSD__) || defined(__DragonFly__)
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__MidnightBSD__)
 #include <time.h>
 #include <sys/vmmeter.h>
 #include <vm/vm_param.h>
@@ -32,10 +34,13 @@
 #ifdef __OpenBSD__
 #include "sysctlbyname.h"
 #include <sys/sensors.h>
+#include <machine/cpu.h>
+#else
+#include <machine/param.h>
 #endif
 
 #define _PRG_NAME "bsdfetch"
-#define _VERSION "0.9"
+#define _VERSION "1.0"
 
 #define COLOR_RED "\x1B[31m"
 #define COLOR_GREEN "\x1B[32m"
@@ -45,20 +50,12 @@
 
 #define _SILENT (void)
 
-#define LIBPKGSO "/lib/libpkg.so"
-
-struct pkgdb;
-struct pkgdb_it;
-typedef int (*pkg_init_fp)(const char *, const char*);
-typedef void (*pkg_shutdown_fp)(void);
-typedef int (*pkgdb_open_fp)(struct pkgdb **db, int type);
-typedef void (*pkgdb_close_fp)(struct pkgdb *db);
-typedef struct pkgdb_it *(*pkgdb_query_fp)(struct pkgdb *db,
-	const char *pattern, int type);
-typedef int (*pkgdb_it_count_fp)(struct pkgdb_it *);
-
 typedef unsigned int uint;
 
+char buf[256] = {0};
+size_t buf_size = 0;
+
+int ret = 0;
 int color_flag = 1;
 
 static void die(int err_num, int line);
@@ -95,70 +92,92 @@ static void show(const char *entry, const char *text) {
 }
 
 static void get_shell() {
-	show("Shell", getenv("SHELL"));
+	char *sh;
+	char *p;
+	const char c = '/';
+	uid_t uid = geteuid();
+	struct passwd *pw = getpwuid(uid);
+
+	if (getenv("SHELL")) {
+		sh = getenv("SHELL");
+	} else {
+		if ((sh = getenv("SHELL")) == NULL || *sh == '\0') {
+			if (pw == NULL)
+				die(errno, __LINE__);
+			sh = pw->pw_shell;
+		}
+	}
+
+	if ((p = strrchr(sh, c)) != NULL && *(p+1) != '\0')
+		sh = ++ p;
+
+	show("Shell", sh);
 }
 
 static void get_user() {
-	show("User", getenv("USER"));
+	char *user;
+	uid_t uid = geteuid();
+	struct passwd *pw = getpwuid(uid);
+
+	if (getenv("USER")) {
+		user = getenv("USER");
+	} else {
+		if ((user = getenv("USER")) == NULL || *user == '\0') {
+			if (pw == NULL)
+				die(errno, __LINE__);
+			user = pw->pw_name;
+		}
+	}
+
+	show("User", user);
 }
 
 static void get_cpu() {
-	size_t num_cpu_size = 0;
-	uint num_cpu = 0;
-	char cpu_type[200] = {0};
-	char tmp[100] = {0};
-
-	num_cpu_size = sizeof(num_cpu);
-
-	if(sysctlbyname("hw.ncpu", &num_cpu, &num_cpu_size, NULL, 0) == -1)
-		die(errno, __LINE__);
-
-#if defined(__NetBSD__)
-	FILE *fc = NULL;
-
-	fc = popen("awk 'BEGIN{FS=\":\"} /model name/ { print $2; exit }' "
-                   "/proc/cpuinfo | sed -e 's/ @//' -e 's/^ *//g' -e 's/ *$//g' "
-                   "| head -1 | tr -d '\\n'",
-                   "r");
-	if (fc == NULL)
-		die(errno, __LINE__);
-
-	fgets(cpu_type, sizeof(cpu_type), fc);
-	pclose(fc);
-#else
 	size_t cpu_type_size = 0;
-	cpu_type_size = sizeof(char) * 200;
-	if(sysctlbyname("hw.model", &cpu_type, &cpu_type_size, NULL, 0) == -1)
+	uint ncpu = 0;
+	uint ncpu_max = 0;
+	char cpu_type[200] = {0};
+
+	ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+	ncpu_max = sysconf(_SC_NPROCESSORS_CONF);
+	if (ncpu_max <= 0 || ncpu <= 0)
 		die(errno, __LINE__);
-#endif
+
+	cpu_type_size = sizeof(char) * 200;
+	if(sysctlbyname("machdep.cpu_brand", &cpu_type, &cpu_type_size, NULL, 0) == -1)
+		if(sysctlbyname("hw.model", &cpu_type, &cpu_type_size, NULL, 0) == -1)
+			die(errno, __LINE__);
+
 	show("CPU", cpu_type);
 
-	_SILENT sprintf(tmp, "%d", num_cpu);
-
-	show("Cores", tmp);
+	show("Cores", buf);
 
 #if defined(__FreeBSD__) || defined(__MidnightBSD__) || defined(__DragonFly__)
-	for(uint i = 0; i < num_cpu; i++) {
-		size_t temperature_size = 0;
-		char buf[100] = {0};
-		int temperature = 0;
+	for(uint i = 0; i < ncpu; i++) {
+		size_t temp_size = 0;
+		int temp = 0;
+		int ret_t = 0;
 
-		sprintf(buf, "dev.cpu.%d.temperature", i);
+		temp_size = sizeof(buf);
+		ret_t = snprintf(buf, temp_size, "dev.cpu.%d.temperature", i);
+		if (ret_t < 0 || (size_t) ret_t >= buf_size)
+			die(errno, __LINE__);
 
-		temperature_size = sizeof(buf);
-		if(sysctlbyname(buf, &temperature, &temperature_size, NULL, 0) == -1)
+		if(sysctlbyname(buf, &temp, &temp_size, NULL, 0) == -1)
 			return;
 
 		_SILENT fprintf(stdout, " %s->%s %sCore [%d]:%s %.1f °C\n",
 						COLOR_GREEN, COLOR_RESET,
 						COLOR_RED, i + 1, COLOR_RESET,
-						(temperature * 0.1) - CELSIUS);
+						(temp * 0.1) - CELSIUS);
 	}
 #elif defined(__OpenBSD__)
 	int mib[5];
 	char temp[10] = {0};
 	size_t size = 0;
+	size_t temp_size = 0;
 	struct sensor sensors;
+	int ret_t = 0;
 
 	mib[0] = CTL_HW;
 	mib[1] = HW_SENSORS;
@@ -167,186 +186,147 @@ static void get_cpu() {
 	mib[4] = 0;
 
 	size = sizeof(sensors);
+	temp_size = sizeof(temp);
 
 	if(sysctl(mib, 5, &sensors, &size, NULL, 0) < 0)
 		return;
 
-	_SILENT sprintf(temp, "%d °C", (int)((float)(sensors.value - 273150000) / 1E6));
+	ret_t = snprintf(temp, temp_size, "%d °C", (int)((float)(sensors.value - 273150000) / 1E6));
+	if (ret_t < 0 || (size_t) ret_t >= temp_size)
+		die(errno, __LINE__);
 
 	show("CPU Temp", temp);
+
+#elif defined(__NetBSD__)
+	const char del[] = ".";
+	char *temp = "";
+	int ret_t = 0;
+
+	FILE *f = NULL;
+	f = popen("/usr/sbin/envstat | awk '/cpu[0-9]/ {printf $3}'", "r");
+	if (f == NULL)
+		die(errno, __LINE__);
+
+	if (fgets(buf, buf_size, f) != NULL)
+		if ((temp = strtok(buf, del)) != NULL && *temp != '\0')
+	if (pclose(f) != 0)
+		die(errno, __LINE__);
+
+	ret_t = snprintf(buf, buf_size, "%s °C", temp);
+	if (ret_t < 0 || (size_t) ret_t >= buf_size)
+		die(errno, __LINE__);
+
+	show("CPU Temp", buf);
+
 #endif
 }
 
 static void get_loadavg() {
-	char tmp[20] = {0};
-	double *lavg = NULL;
+	double lavg[3] = { 0.0 };
 
-	lavg = malloc(sizeof(double) * 3);
+	(void)getloadavg(lavg, 3);
 
-	(void)getloadavg(lavg, -1);
+	ret = snprintf(buf, buf_size, "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
+	if (ret < 0 || (size_t) ret >= buf_size)
+		die(errno, __LINE__);
 
-	_SILENT sprintf(tmp, "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
-
-	show("Loadavg", tmp);
+	show("Loadavg", buf);
 }
 
 static void get_packages() {
-#if defined(__MidnightBSD__)
 	FILE *f = NULL;
-	char buf[10] = {0};
+	size_t npkg = 0;
 
-	/*
-	  It might be better to use the mport stats functionality long term, but this
-	  avoids parsing.
-	*/
-	f = popen("/usr/sbin/mport list | wc -l | tr -d \"\n \"", "r");
-	if(f == NULL)
-		die(errno, __LINE__);
-
-	fgets(buf, sizeof(buf), f);
-	pclose(f);
-
-	show("Packages", buf);
-#elif defined(__FreeBSD__)
-	int numpkg = 0;
-	void *libhdl = 0;
-	struct pkgdb *pdb = 0;
-	char buf[256];
-	size_t basesz = sizeof buf;
-
-	if (sysctlbyname("user.localbase", buf, &basesz, NULL, 0) < 0)
-	    goto done;
-	if (sizeof buf - basesz < sizeof LIBPKGSO - 1)
-	    goto done;
-	memcpy(buf + basesz - 1, LIBPKGSO, sizeof LIBPKGSO);
-
-	if (!(libhdl = dlopen(buf, RTLD_LAZY))) goto done;
-	pkg_init_fp p_init = (pkg_init_fp)dlsym(libhdl, "pkg_init");
-	if (!p_init) goto done;
-	pkg_shutdown_fp p_shutdown = (pkg_shutdown_fp)dlsym(
-		libhdl, "pkg_shutdown");
-	if (!p_shutdown) goto done;
-	pkgdb_open_fp pdb_open = (pkgdb_open_fp)dlsym(libhdl, "pkgdb_open");
-	if (!pdb_open) goto done;
-	pkgdb_close_fp pdb_close = (pkgdb_close_fp)dlsym(libhdl, "pkgdb_close");
-	if (!pdb_close) goto done;
-	pkgdb_query_fp pdb_query = (pkgdb_query_fp)dlsym(libhdl, "pkgdb_query");
-	if (!pdb_query) goto done;
-	pkgdb_it_count_fp pdb_it_count = (pkgdb_it_count_fp)dlsym(
-		libhdl, "pkgdb_it_count");
-	if (!pdb_it_count) goto done;
-
-	if (p_init("/", 0) != 0) goto done;
-	if (pdb_open(&pdb, 0) != 0) goto done;
-	struct pkgdb_it *it = pdb_query(pdb, 0, 0);
-	numpkg = pdb_it_count(it);
-
-done:
-	if (pdb) pdb_close(pdb);
-	if (libhdl)
-	{
-	    if (p_shutdown) p_shutdown();
-	    dlclose(libhdl);
-	}
-	sprintf(buf, "%d", numpkg);
-	show("Packages", buf);
-#elif defined(__OpenBSD__) || defined(__NetBSD__)
-	FILE *f = NULL;
-	char buf[10] = {0};
-
-	/*
-		This is a little hacky for the moment. I don't
-		see another good solution to get the package
-		count on OpenBSD.
-		Still, this works fine.
-	*/
-	f = popen("/usr/sbin/pkg_info | wc -l | tr -d \"\n \"", "r");
-	if(f == NULL)
-		die(errno, __LINE__);
-
-	fgets(buf, sizeof(buf), f);
-	pclose(f);
-
-	show("Packages", buf);
+#if defined(__OpenBSD__) || defined(__NetBSD__)
+	f = popen("/usr/sbin/pkg_info", "r");
 #elif defined( __DragonFly__)
-	char buf[10] ={0};
-	FILE *fp = NULL;
-
-	/**
-	 * Despite being a fork of FreeBSD 4.8, DragonFly doesn't share
-	 * same API level access. Here `pkg list` just list all the packages
-	 * from the local database.
-	*/
-	fp = popen("pkg list | wc -l | tr -d \"\n \"", "r");
-	if (fp == NULL)
+	f = popen("/usr/sbin/pkg info", "r");
+#elif defined(__FreeBSD__)
+	if(access("/usr/local/sbin/pkg", F_OK) == 0) {
+		f = popen("/usr/local/sbin/pkg info", "r");
+	} else {
+		npkg = 0;
+		goto no_pkg;
+	}
+#elif defined( __MidnightBSD__)
+	f = popen("/usr/sbin/mport list", "r");
+#else
+	fprintf(stderr, "Could not determine BSD variant\n");
+	die(errno, __LINE__);
+#endif
+	if(f == NULL)
 		die(errno, __LINE__);
 
-	fgets(buf, sizeof(buf), fp);
-	pclose(fp);
+	while (fgets(buf, sizeof buf, f) != NULL)
+		if (strchr(buf, '\n') != NULL)
+			npkg++;
+	if (pclose(f) != 0)
+		die(errno, __LINE__);
+
+#ifdef __FreeBSD__
+no_pkg:
+#endif
+	ret = snprintf(buf, buf_size, "%zu", npkg);
+	if (ret < 0 || (size_t) ret >= buf_size)
+		die(errno, __LINE__);
 
 	show("Packages", buf);
-#endif
 }
 
 static void get_uptime() {
-	char buf[100] = {0};
 	int up = 0;
-	int ret = 0;
+	int res = 0;
 	int days = 0;
 	int hours = 0;
 	int minutes = 0;
 	struct timespec t;
+	size_t tsz = sizeof t;
 
-#ifndef CLOCK_UPTIME
-#define CLOCK_UPTIME CLOCK_MONOTONIC
-#endif
-	ret = clock_gettime(CLOCK_UPTIME, &t);
-	if(ret == -1)
+	if ((res = sysctlbyname("kern.boottime", &t, &tsz, NULL, 0)) == -1)
 		die(errno, __LINE__);
 
-	up = t.tv_sec;
+	up = time(NULL) - t.tv_sec + 30;
 	days = up / 86400;
 	up %= 86400;
 	hours = up / 3600;
 	up %= 3600;
 	minutes = up / 60;
 
-	_SILENT sprintf(buf, "%dd %dh %dm", days, hours, minutes);
+	ret = snprintf(buf, buf_size, "%dd %dh %dm", days, hours, minutes);
+	if (ret < 0 || (size_t) ret >= buf_size)
+		die(errno, __LINE__);
 
 	show("Uptime", buf);
 }
 
 static void get_memory() {
-	unsigned long long buf = 0;
+	unsigned long long buff = 0;
 	unsigned long long mem = 0;
-	char tmp[50] = {0};
-	size_t buf_size = 0;
+	const long pgsize = sysconf(_SC_PAGESIZE);
+	const long pages = sysconf(_SC_PHYS_PAGES);
 
-	buf_size = sizeof(buf);
-
-#if defined(__FreeBSD__) || defined(__MidnightBSD__)
-	if(sysctlbyname("hw.realmem", &buf, &buf_size, NULL, 0) == -1)
+	if (pgsize == -1 || pages == -1)
 		die(errno, __LINE__);
-#elif defined(__OpenBSD__) || defined(__DragonFly__)
-	if(sysctlbyname("hw.physmem", &buf, &buf_size, NULL, 0) == -1)
+	else
+		buff = (uint64_t)pgsize * (uint64_t)pages;
+
+	if (buff <= 0)
 		die(errno, __LINE__);
-#elif defined(__NetBSD__)
-	if(sysctlbyname("hw.physmem64", &buf, &buf_size, NULL, 0) == -1)
+	else
+		mem = buff / 1048576;
+
+	ret = snprintf(buf, buf_size, "%llu MB", mem);
+	if (ret < 0 || (size_t) ret >= buf_size)
 		die(errno, __LINE__);
-#endif
 
-	mem = buf / 1048576;
-
-	_SILENT sprintf(tmp, "%llu MB", mem);
-
-	show("RAM", tmp);
+	show("RAM", buf);
 }
 
 static void get_hostname() {
 	long host_size_max = 0;
-	char hostname[15] = {0};
+	char hostname[_POSIX_HOST_NAME_MAX + 1];
 
-	host_size_max = sysconf(_SC_HOST_NAME_MAX);
+	host_size_max = sysconf(_SC_HOST_NAME_MAX) + 1;
 	if(gethostname(hostname, host_size_max) == -1)
 		die(errno, __LINE__);
 
@@ -354,20 +334,12 @@ static void get_hostname() {
 }
 
 static void get_arch() {
-	char buf[20] = {0};
-	size_t buf_size = 0;
+	struct utsname un;
 
-	buf_size = sizeof(buf);
-
-#if defined(__FreeBSD__) || defined(__MidnightBSD__) || defined(__DragonFly__)
-	if(sysctlbyname("hw.machine_arch", &buf, &buf_size, NULL, 0) == -1)
+	if(uname(&un))
 		die(errno, __LINE__);
-#elif defined(__OpenBSD__) || defined(__NetBSD__)
-	if(sysctlbyname("hw.machine", &buf, &buf_size, NULL, 0) == -1)
-		die(errno, __LINE__);
-#endif
 
-	show("Arch", buf);
+	show("Arch", un.machine);
 }
 
 static void get_sysinfo() {
@@ -400,6 +372,9 @@ static void usage() {
 }
 
 int main(int argc, char **argv) {
+
+	buf_size = sizeof(buf);
+
 	int is_a_tty = 0;
 
 	is_a_tty = isatty(1);

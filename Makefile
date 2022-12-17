@@ -6,13 +6,12 @@ SRC=bsdfetch.c
 .endif
 OBJ=bsdfetch
 CC=cc
-CFLAGS=-Wall -Wunused -Wextra -Wshadow -pedantic
+CFLAGS=-Wall -Wunused -Wextra -Wshadow -pedantic -O2
 DEBUG=-g -ggdb
-OPTIMIZATION=-O2
 
 .PHONY: all
 all:
-	$(CC) $(SRC) -o $(OBJ) $(CFLAGS) $(OPTIMIZATION)
+	$(CC) $(SRC) -o $(OBJ) $(CFLAGS)
 
 .PHONY: debug
 debug:
