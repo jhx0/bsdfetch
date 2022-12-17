@@ -31,4 +31,4 @@ Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh
 **Laurent Cheylus** (https://twitter.com/lcheylus) - For implementing "Arch" and "Memory" support for bsdfetch on OpenBSD (libsysctl). Also, for fixing a bug when no sensors are present on OpenBSD.   
 **Lucas Holt** (https://www.midnightbsd.org/) - For porting bsdfetch to MidnightBSD.   
 **rilysh** (https://github.com/rilysh) - For porting bsdfetch to NetBSD and DragonflyBSD.   
-**vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems.   
+**vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems. And for overhauling a large part of the code.
