@@ -40,7 +40,15 @@
 #endif
 
 #define _PRG_NAME "bsdfetch"
-#define _VERSION "1.0"
+#define _VERSION "1.0.1"
+
+#ifndef MAXCPUS
+# ifdef MAXCPU
+# define MAXCPUS MAXCPU
+# else
+# define MAXCPUS 256
+# endif
+#endif
 
 #define COLOR_RED "\x1B[31m"
 #define COLOR_GREEN "\x1B[32m"
@@ -59,6 +67,7 @@ int ret = 0;
 int color_flag = 1;
 
 static void die(int err_num, int line);
+static void error(const char *msg, int line);
 static void show(const char *entry, const char *text);
 static void get_shell();
 static void get_user();
@@ -74,7 +83,13 @@ static void version();
 static void usage();
 
 static void die(int err_num, int line) {
-	fprintf(stderr, "[%d - %d] Error: %s\n", line, err_num, strerror(err_num));
+	_SILENT fprintf(stderr, "[ERROR] [Line: %d - Errno: %d] %s\n", line, err_num, strerror(err_num));
+
+	exit(EXIT_FAILURE);
+}
+
+static void error(const char *msg, int line) {
+	_SILENT fprintf(stderr, "[ERROR] [Line: %d] %s\n", line, msg);
 
 	exit(EXIT_FAILURE);
 }
@@ -137,11 +152,13 @@ static void get_cpu() {
 	uint ncpu = 0;
 	uint ncpu_max = 0;
 	char cpu_type[200] = {0};
+	uint cores_buf_size = 128;
 
 	ncpu = sysconf(_SC_NPROCESSORS_ONLN);
 	ncpu_max = sysconf(_SC_NPROCESSORS_CONF);
+
 	if (ncpu_max <= 0 || ncpu <= 0)
-		die(errno, __LINE__);
+		error("No CPU's found", __LINE__);
 
 	cpu_type_size = sizeof(char) * 200;
 	if(sysctlbyname("machdep.cpu_brand", &cpu_type, &cpu_type_size, NULL, 0) == -1)
@@ -149,6 +166,10 @@ static void get_cpu() {
 			die(errno, __LINE__);
 
 	show("CPU", cpu_type);
+
+	ret = snprintf(buf, cores_buf_size, "%d of %d processors online", ncpu, ncpu_max);
+	if (ret < 0)
+		error("Could not write data to buffer", __LINE__);
 
 	show("Cores", buf);
 
@@ -161,7 +182,7 @@ static void get_cpu() {
 		temp_size = sizeof(buf);
 		ret_t = snprintf(buf, temp_size, "dev.cpu.%d.temperature", i);
 		if (ret_t < 0 || (size_t) ret_t >= buf_size)
-			die(errno, __LINE__);
+			error("Could not write data to buffer", __LINE__);
 
 		if(sysctlbyname(buf, &temp, &temp_size, NULL, 0) == -1)
 			return;
@@ -193,7 +214,7 @@ static void get_cpu() {
 
 	ret_t = snprintf(temp, temp_size, "%d °C", (int)((float)(sensors.value - 273150000) / 1E6));
 	if (ret_t < 0 || (size_t) ret_t >= temp_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("CPU Temp", temp);
 
@@ -214,7 +235,7 @@ static void get_cpu() {
 
 	ret_t = snprintf(buf, buf_size, "%s °C", temp);
 	if (ret_t < 0 || (size_t) ret_t >= buf_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("CPU Temp", buf);
 
@@ -228,7 +249,7 @@ static void get_loadavg() {
 
 	ret = snprintf(buf, buf_size, "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
 	if (ret < 0 || (size_t) ret >= buf_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("Loadavg", buf);
 }
@@ -251,8 +272,7 @@ static void get_packages() {
 #elif defined( __MidnightBSD__)
 	f = popen("/usr/sbin/mport list", "r");
 #else
-	fprintf(stderr, "Could not determine BSD variant\n");
-	die(errno, __LINE__);
+	error("Could not determine BSD variant", __LINE__);
 #endif
 	if(f == NULL)
 		die(errno, __LINE__);
@@ -268,7 +288,7 @@ no_pkg:
 #endif
 	ret = snprintf(buf, buf_size, "%zu", npkg);
 	if (ret < 0 || (size_t) ret >= buf_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("Packages", buf);
 }
@@ -294,7 +314,7 @@ static void get_uptime() {
 
 	ret = snprintf(buf, buf_size, "%dd %dh %dm", days, hours, minutes);
 	if (ret < 0 || (size_t) ret >= buf_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("Uptime", buf);
 }
@@ -306,18 +326,18 @@ static void get_memory() {
 	const long pages = sysconf(_SC_PHYS_PAGES);
 
 	if (pgsize == -1 || pages == -1)
-		die(errno, __LINE__);
+		error("Could not determine pagesize", __LINE__);
 	else
 		buff = (uint64_t)pgsize * (uint64_t)pages;
 
 	if (buff <= 0)
-		die(errno, __LINE__);
+		error("Pagesize is less then zero", __LINE__);
 	else
 		mem = buff / 1048576;
 
 	ret = snprintf(buf, buf_size, "%llu MB", mem);
 	if (ret < 0 || (size_t) ret >= buf_size)
-		die(errno, __LINE__);
+		error("Could not write data to buffer", __LINE__);
 
 	show("RAM", buf);
 }
