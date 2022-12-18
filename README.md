@@ -17,10 +17,11 @@ $ ./bsdfetch
 ## Screenshots:
 
 **FreeBSD system example:**   
-![freebsd-bsdfetch](https://user-images.githubusercontent.com/37046652/202207069-76dad8ea-1f4c-4b6e-818c-7af2f5252aa1.png)
+![image](https://user-images.githubusercontent.com/37046652/208292534-2c64874e-e3a8-4486-9fdd-bd74adc3e0a0.png)
 
 **OpenBSD system example:**   
-![openbsd-bsdfetch](https://user-images.githubusercontent.com/37046652/202207149-649af034-8497-418a-a864-520d9aa1d463.png)
+![image](https://user-images.githubusercontent.com/37046652/208292527-b63af7c5-6a1a-4ccc-833e-9d1175bcc33f.png)
+
 
 ## Interesting:   
 Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh   
