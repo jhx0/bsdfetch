@@ -34,24 +34,18 @@
 #ifdef __OpenBSD__
 #include "sysctlbyname.h"
 #include <sys/sensors.h>
-#include <machine/cpu.h>
 #else
 #include <machine/param.h>
 #endif
 
 #define _PRG_NAME "bsdfetch"
-#define _VERSION "1.0.1"
+#define _VERSION "1.0.2"
 
-#ifndef MAXCPUS
-# ifdef MAXCPU
-# define MAXCPUS MAXCPU
-# else
-# define MAXCPUS 256
-# endif
-#endif
-
-#define COLOR_RED "\x1B[31m"
-#define COLOR_GREEN "\x1B[32m"
+/* Bright red */
+#define COLOR_RED "\x1B[91m"
+/* Bright green */
+#define COLOR_GREEN "\x1B[92m"
+/* Reset color */
 #define COLOR_RESET "\x1B[0m"
 
 #define CELSIUS 273.15
@@ -152,7 +146,6 @@ static void get_cpu() {
 	uint ncpu = 0;
 	uint ncpu_max = 0;
 	char cpu_type[200] = {0};
-	uint cores_buf_size = 128;
 
 	ncpu = sysconf(_SC_NPROCESSORS_ONLN);
 	ncpu_max = sysconf(_SC_NPROCESSORS_CONF);
@@ -167,7 +160,9 @@ static void get_cpu() {
 
 	show("CPU", cpu_type);
 
-	ret = snprintf(buf, cores_buf_size, "%d of %d processors online", ncpu, ncpu_max);
+	buf_size = sizeof(buf);
+
+	ret = snprintf(buf, buf_size, "%d of %d processors online", ncpu, ncpu_max);
 	if (ret < 0)
 		error("Could not write data to buffer", __LINE__);
 
