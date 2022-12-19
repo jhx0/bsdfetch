@@ -63,18 +63,18 @@ int color_flag = 1;
 static void die(int err_num, int line);
 static void error(const char *msg, int line);
 static void show(const char *entry, const char *text);
-static void get_shell();
-static void get_user();
-static void get_cpu();
-static void get_loadavg();
-static void get_packages();
-static void get_uptime();
-static void get_memory();
-static void get_hostname();
-static void get_arch();
-static void get_sysinfo();
-static void version();
-static void usage();
+static void get_shell(void);
+static void get_user(void);
+static void get_cpu(void);
+static void get_loadavg(void);
+static void get_packages(void);
+static void get_uptime(void);
+static void get_memory(void);
+static void get_hostname(void);
+static void get_arch(void);
+static void get_sysinfo(void);
+static void version(void);
+static void usage(void);
 
 static void die(int err_num, int line) {
 	_SILENT fprintf(stderr, "[ERROR] [Line: %d - Errno: %d] %s\n", line, err_num, strerror(err_num));
@@ -100,7 +100,7 @@ static void show(const char *entry, const char *text) {
 	}
 }
 
-static void get_shell() {
+static void get_shell(void) {
 	char *sh;
 	char *p;
 	const char c = '/';
@@ -123,7 +123,7 @@ static void get_shell() {
 	show("Shell", sh);
 }
 
-static void get_user() {
+static void get_user(void) {
 	char *user;
 	uid_t uid = geteuid();
 	struct passwd *pw = getpwuid(uid);
@@ -141,7 +141,7 @@ static void get_user() {
 	show("User", user);
 }
 
-static void get_cpu() {
+static void get_cpu(void) {
 	size_t cpu_type_size = 0;
 	uint ncpu = 0;
 	uint ncpu_max = 0;
@@ -237,7 +237,7 @@ static void get_cpu() {
 #endif
 }
 
-static void get_loadavg() {
+static void get_loadavg(void) {
 	double lavg[3] = { 0.0 };
 
 	(void)getloadavg(lavg, 3);
@@ -249,7 +249,7 @@ static void get_loadavg() {
 	show("Loadavg", buf);
 }
 
-static void get_packages() {
+static void get_packages(void) {
 	FILE *f = NULL;
 	size_t npkg = 0;
 
@@ -288,7 +288,7 @@ no_pkg:
 	show("Packages", buf);
 }
 
-static void get_uptime() {
+static void get_uptime(void) {
 	int up = 0;
 	int res = 0;
 	int days = 0;
@@ -314,7 +314,7 @@ static void get_uptime() {
 	show("Uptime", buf);
 }
 
-static void get_memory() {
+static void get_memory(void) {
 	unsigned long long buff = 0;
 	unsigned long long mem = 0;
 	const long pgsize = sysconf(_SC_PAGESIZE);
@@ -337,7 +337,7 @@ static void get_memory() {
 	show("RAM", buf);
 }
 
-static void get_hostname() {
+static void get_hostname(void) {
 	long host_size_max = 0;
 	char hostname[_POSIX_HOST_NAME_MAX + 1];
 
@@ -348,7 +348,7 @@ static void get_hostname() {
 	show("Host", hostname);
 }
 
-static void get_arch() {
+static void get_arch(void) {
 	struct utsname un;
 
 	if(uname(&un))
@@ -357,7 +357,7 @@ static void get_arch() {
 	show("Arch", un.machine);
 }
 
-static void get_sysinfo() {
+static void get_sysinfo(void) {
 	struct utsname un;
 
 	if(uname(&un))
@@ -368,7 +368,7 @@ static void get_sysinfo() {
 	show("Version", un.version);
 }
 
-static void version() {
+static void version(void) {
 	_SILENT fprintf(stdout, "%s - version %s (2022)\n",
 			_PRG_NAME,
 			_VERSION
@@ -377,7 +377,7 @@ static void version() {
 	exit(EXIT_SUCCESS);
 }
 
-static void usage() {
+static void usage(void) {
 	_SILENT fprintf(stdout, "USAGE: %s [-n|-v|-h]\n", _PRG_NAME);
 	_SILENT fprintf(stdout, "   -n  Turn off colors\n");
 	_SILENT fprintf(stdout, "   -v  Show version\n");
