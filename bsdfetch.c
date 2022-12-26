@@ -23,7 +23,6 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/utsname.h>
-#include <dlfcn.h>
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__MidnightBSD__)
 #include <time.h>
 #include <sys/vmmeter.h>
@@ -369,9 +368,9 @@ static void get_sysinfo(void) {
 }
 
 static void version(void) {
-	_SILENT fprintf(stdout, "%s - version %s (2022)\n",
+	_SILENT fprintf(stdout, "%s - version %s (%s)\n",
 			_PRG_NAME,
-			_VERSION
+			__DATE__
 			);
 
 	exit(EXIT_SUCCESS);
