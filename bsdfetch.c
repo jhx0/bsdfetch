@@ -370,6 +370,7 @@ static void get_sysinfo(void) {
 static void version(void) {
 	_SILENT fprintf(stdout, "%s - version %s (%s)\n",
 			_PRG_NAME,
+			_VERSION,
 			__DATE__
 			);
 
