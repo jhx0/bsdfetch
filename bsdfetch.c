@@ -38,7 +38,7 @@
 #endif
 
 #define _PRG_NAME "bsdfetch"
-#define _VERSION "1.0.2"
+#define _VERSION "1.0.3"
 
 /* Bright red */
 #define COLOR_RED "\x1B[91m"
