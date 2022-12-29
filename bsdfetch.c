@@ -103,17 +103,13 @@ static void get_shell(void) {
 	char *sh;
 	char *p;
 	const char c = '/';
-	uid_t uid = geteuid();
+	uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
 
-	if (getenv("SHELL")) {
-		sh = getenv("SHELL");
-	} else {
-		if ((sh = getenv("SHELL")) == NULL || *sh == '\0') {
-			if (pw == NULL)
-				die(errno, __LINE__);
-			sh = pw->pw_shell;
-		}
+	if ((sh = getenv("SHELL")) == NULL || *sh == '\0') {
+		if (pw == NULL)
+			die(errno, __LINE__);
+		sh = pw->pw_shell;
 	}
 
 	if ((p = strrchr(sh, c)) != NULL && *(p+1) != '\0')
@@ -124,17 +120,13 @@ static void get_shell(void) {
 
 static void get_user(void) {
 	char *user;
-	uid_t uid = geteuid();
+	uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
 
-	if (getenv("USER")) {
-		user = getenv("USER");
-	} else {
-		if ((user = getenv("USER")) == NULL || *user == '\0') {
-			if (pw == NULL)
-				die(errno, __LINE__);
-			user = pw->pw_name;
-		}
+	if ((user = getenv("USER")) == NULL || *user == '\0') {
+		if (pw == NULL)
+			die(errno, __LINE__);
+		user = pw->pw_name;
 	}
 
 	show("User", user);
