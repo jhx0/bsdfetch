@@ -103,7 +103,7 @@ static void get_shell(void) {
 	char *sh;
 	char *p;
 	const char c = '/';
-	uid_t uid = geteuid();
+	uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
 
 	if (getenv("SHELL")) {
@@ -124,7 +124,7 @@ static void get_shell(void) {
 
 static void get_user(void) {
 	char *user;
-	uid_t uid = geteuid();
+	uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
 
 	if (getenv("USER")) {
