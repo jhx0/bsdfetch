@@ -34,3 +34,4 @@ Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh
 **rilysh** (https://github.com/rilysh) - For porting bsdfetch to NetBSD and DragonflyBSD. Also, for removing a unneeded header and adding a date output to version().   
 **vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems. And for overhauling a large part of the code.   
 **Thomas Adam** (https://github.com/ThomasAdam) - Using void in function prototypes without arguments.   
+**Alexander Naumochkin** - For providing two fixes to the project (USER and UID fix).   
