@@ -54,7 +54,6 @@
 typedef unsigned int uint;
 
 char buf[256] = {0};
-size_t buf_size = 0;
 
 int ret = 0;
 int color_flag = 1;
@@ -151,9 +150,7 @@ static void get_cpu(void) {
 
 	show("CPU", cpu_type);
 
-	buf_size = sizeof(buf);
-
-	ret = snprintf(buf, buf_size, "%d of %d processors online", ncpu, ncpu_max);
+	ret = snprintf(buf, sizeof(buf), "%d of %d processors online", ncpu, ncpu_max);
 	if (ret < 0)
 		error("Could not write data to buffer", __LINE__);
 
@@ -167,7 +164,7 @@ static void get_cpu(void) {
 
 		temp_size = sizeof(buf);
 		ret_t = snprintf(buf, temp_size, "dev.cpu.%d.temperature", i);
-		if (ret_t < 0 || (size_t) ret_t >= buf_size)
+		if (ret_t < 0 || (size_t) ret_t >= sizeof(buf))
 			error("Could not write data to buffer", __LINE__);
 
 		if(sysctlbyname(buf, &temp, &temp_size, NULL, 0) == -1)
@@ -214,13 +211,13 @@ static void get_cpu(void) {
 	if (f == NULL)
 		die(errno, __LINE__);
 
-	if (fgets(buf, buf_size, f) != NULL)
+	if (fgets(buf, sizeof(buf), f) != NULL)
 		if ((temp = strtok(buf, del)) != NULL && *temp != '\0')
 	if (pclose(f) != 0)
 		die(errno, __LINE__);
 
-	ret_t = snprintf(buf, buf_size, "%s °C", temp);
-	if (ret_t < 0 || (size_t) ret_t >= buf_size)
+	ret_t = snprintf(buf, sizeof(buf), "%s °C", temp);
+	if (ret_t < 0 || (size_t) ret_t >= sizeof(buf))
 		error("Could not write data to buffer", __LINE__);
 
 	show("CPU Temp", buf);
@@ -233,8 +230,8 @@ static void get_loadavg(void) {
 
 	(void)getloadavg(lavg, 3);
 
-	ret = snprintf(buf, buf_size, "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
-	if (ret < 0 || (size_t) ret >= buf_size)
+	ret = snprintf(buf, sizeof(buf), "%.2lf %.2lf %.2lf", lavg[0], lavg[1], lavg[2]);
+	if (ret < 0 || (size_t) ret >= sizeof(buf))
 		error("Could not write data to buffer", __LINE__);
 
 	show("Loadavg", buf);
@@ -272,8 +269,8 @@ static void get_packages(void) {
 #ifdef __FreeBSD__
 no_pkg:
 #endif
-	ret = snprintf(buf, buf_size, "%zu", npkg);
-	if (ret < 0 || (size_t) ret >= buf_size)
+	ret = snprintf(buf, sizeof(buf), "%zu", npkg);
+	if (ret < 0 || (size_t) ret >= sizeof(buf))
 		error("Could not write data to buffer", __LINE__);
 
 	show("Packages", buf);
@@ -298,8 +295,8 @@ static void get_uptime(void) {
 	up %= 3600;
 	minutes = up / 60;
 
-	ret = snprintf(buf, buf_size, "%dd %dh %dm", days, hours, minutes);
-	if (ret < 0 || (size_t) ret >= buf_size)
+	ret = snprintf(buf, sizeof(buf), "%dd %dh %dm", days, hours, minutes);
+	if (ret < 0 || (size_t) ret >= sizeof(buf))
 		error("Could not write data to buffer", __LINE__);
 
 	show("Uptime", buf);
@@ -321,8 +318,8 @@ static void get_memory(void) {
 	else
 		mem = buff / 1048576;
 
-	ret = snprintf(buf, buf_size, "%llu MB", mem);
-	if (ret < 0 || (size_t) ret >= buf_size)
+	ret = snprintf(buf, sizeof(buf), "%llu MB", mem);
+	if (ret < 0 || (size_t) ret >= sizeof(buf))
 		error("Could not write data to buffer", __LINE__);
 
 	show("RAM", buf);
@@ -379,9 +376,6 @@ static void usage(void) {
 }
 
 int main(int argc, char **argv) {
-
-	buf_size = sizeof(buf);
-
 	int is_a_tty = 0;
 
 	is_a_tty = isatty(1);
