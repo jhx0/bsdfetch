@@ -22,6 +22,8 @@ $ ./bsdfetch
 **OpenBSD system example:**   
 ![image](https://user-images.githubusercontent.com/37046652/208292527-b63af7c5-6a1a-4ccc-833e-9d1175bcc33f.png)
 
+**NetBSD system example:**   
+![image](https://user-images.githubusercontent.com/37046652/211198104-5bd43e08-4213-4b81-9e25-a4b7805aec1f.png)
 
 ## Interesting:   
 Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh   
@@ -35,3 +37,4 @@ Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh
 **vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems. And for overhauling a large part of the code.   
 **Thomas Adam** (https://github.com/ThomasAdam) - Using void in function prototypes without arguments.   
 **Alexander Naumochkin** (https://github.com/dorjechang) - For providing two fixes to the project (USER and UID fix).   
+**Anonymous contributor** - Improved/Simplified bsdfetch to a great extent.
