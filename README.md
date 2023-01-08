@@ -2,6 +2,12 @@
 
 **bsdfetch** is a simple tool to show information about a running **FreeBSD/OpenBSD/MidnightBSD/NetBSD/DragonflyBSD** system.
 
+## Packages/Ports
+bsdfetch is available as a package/port on the following BSD's:
+
+**NetBSD** - sysutils/bsdfetch (https://pkgsrc.se/sysutils/bsdfetch)   
+**MidnightBSD** - sysutils/bsdfetch (https://github.com/MidnightBSD/mports/tree/master/sysutils/bsdfetch)
+
 ## Usage:
 1. Clone/download this repository
 2. Unpack/cd into the directory
