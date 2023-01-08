@@ -1,22 +1,28 @@
-UNAME_S != uname -s
-.if $(UNAME_S) == "OpenBSD"
-SRC=sysctlbyname.c bsdfetch.c
+CC?=	clang
+CFLAGS=	-O2 -fomit-frame-pointer -pipe
+.if ${CC} == "clang"
+CFLAGS+=	-Weverything
 .else
-SRC=bsdfetch.c
+CFLAGS+=	-Wall -Wconversion -Wshadow -Wextra -Wpedantic
 .endif
-OBJ=bsdfetch
-CC=cc
-CFLAGS=-Wall -Wunused -Wextra -Wshadow -pedantic -O2
-DEBUG=-g -ggdb
+DFLAGS=	-g -ggdb
+EXE=	bsdfetch
+DBG=	${EXE}.debug
 
-.PHONY: all
-all:
-	$(CC) $(SRC) -o $(OBJ) $(CFLAGS)
+SRC=	bsdfetch.c
+OS != uname -s
+.if ${OS} == "OpenBSD"
+SRC+=	sysctlbyname.c
+.endif
 
-.PHONY: debug
-debug:
-	$(CC) $(SRC) -o $(OBJ) $(CFLAGS) $(DEBUG)
+${EXE}: ${SRC}
+	${CC} ${CFLAGS} -s -o $@ $>
+
+${DBG}: ${SRC}
+	${CC} ${DFLAGS} -o $@ $>
+
+all: ${EXE} ${DBG}
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ)
+	rm -f ${EXE} ${DBG}

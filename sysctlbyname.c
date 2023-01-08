@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "openbsd_internal.h"
+#include "sysctlbyname.h"
 
 int
 sysctlbyname(const char *name, void *oldp, size_t *oldlenp,
