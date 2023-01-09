@@ -212,13 +212,13 @@ static void get_packages(void) {
 
 static void get_uptime(void) {
 	long up, days, hours, mins;
-	struct timespec t;
+	struct timeval t;
 	size_t tsz = sizeof t;
 
 	if (sysctlbyname("kern.boottime", &t, &tsz, NULL, 0) == -1)
 		err(1, "failed to get kern.boottime");
 
-	up = time(NULL) - t.tv_sec + 30;
+	up = (long)(time(NULL) - t.tv_sec + 30);
 	days = up / 86400;
 	up %= 86400;
 	hours = up / 3600;
