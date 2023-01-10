@@ -31,7 +31,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define VERSION	"1.1.0"
+#define VERSION	"1.1.1"
 #define RED	"\033[1;31m"	/* Bright red */
 #define GREEN "\033[1;32m"	/* Bright green */
 #define CEND "\033[0m"		/* Reset color */
