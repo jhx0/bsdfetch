@@ -39,7 +39,7 @@ Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh
 **Felix Palmen** (https://twitter.com/8bitsound) - For suggestions regarding tty, initialization, color output handling. Also for contributing to the project (pkg).   
 **Laurent Cheylus** (https://twitter.com/lcheylus) - For implementing "Arch" and "Memory" support for bsdfetch on OpenBSD (libsysctl). Also, for fixing a bug when no sensors are present on OpenBSD.   
 **Lucas Holt** (https://www.midnightbsd.org/) - For porting bsdfetch to MidnightBSD.   
-**rilysh** (https://github.com/rilysh) - For porting bsdfetch to NetBSD and DragonflyBSD. Also, for removing a unneeded header and adding a date output to version().   
+**rilysh** (https://github.com/rilysh) - For porting bsdfetch to NetBSD and DragonflyBSD. Also, for removing a unneeded header and adding a date output to version(). Also for removing unneeded sysctl entries, therefore slimming down the binary to some extent.   
 **vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems. And for overhauling a large part of the code.   
 **Thomas Adam** (https://github.com/ThomasAdam) - Using void in function prototypes without arguments.   
 **Alexander Naumochkin** (https://github.com/dorjechang) - For providing two fixes to the project (USER and UID fix). Also for fixing a compiler warning on armv6 systems. Reported a version difference in the code.    
