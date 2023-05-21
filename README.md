@@ -43,4 +43,5 @@ Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetsh
 **vins** (@sehnsucht@social.sdf.org) - For improving the CPU handling and enabling uptime on NetBSD. Also, for informing about possible breakage with wrong include (sys/time.h) affecting FreeBSD (based) systems. And for overhauling a large part of the code.   
 **Thomas Adam** (https://github.com/ThomasAdam) - Using void in function prototypes without arguments.   
 **Alexander Naumochkin** (https://github.com/dorjechang) - For providing two fixes to the project (USER and UID fix). Also for fixing a compiler warning on armv6 systems. Reported a version difference in the code.    
-**Anonymous contributor** - Improved/Simplified bsdfetch to a great extent.
+**Anonymous contributor** - Improved/Simplified bsdfetch to a great extent.   
+**Nick Brown** (https://github.com/bicknrown) - Pointed out a dead link in the Readme.   
