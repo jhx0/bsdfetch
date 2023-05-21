@@ -32,7 +32,7 @@ $ ./bsdfetch
 ![image](https://user-images.githubusercontent.com/37046652/211198104-5bd43e08-4213-4b81-9e25-a4b7805aec1f.png)
 
 ## Interesting:   
-Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetch-sh   
+Pure shell implementation of bsdfetch: https://github.com/rilysh/bsdfetsh  
 
 ## Thanks:
 
